@@ -1,8 +1,8 @@
 package html
 
 import (
+	"github.com/RedStylzZ/hkcam/app"
 	"github.com/brutella/go-github-selfupdate/selfupdate"
-	"github.com/brutella/hkcam/app"
 
 	"encoding/json"
 	"net/http"

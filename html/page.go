@@ -1,7 +1,7 @@
 package html
 
 import (
-	"github.com/brutella/hkcam/app"
+	"github.com/RedStylzZ/hkcam/app"
 
 	"html/template"
 	"net/http"

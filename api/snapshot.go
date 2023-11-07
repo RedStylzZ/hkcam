@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/brutella/hkcam/api/apiutil"
+	"github.com/RedStylzZ/hkcam/api/apiutil"
 
 	"bytes"
 	"fmt"

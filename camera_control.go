@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -47,30 +46,38 @@ func NewCameraControl() *CameraControl {
 }
 
 func (cc *CameraControl) SetupWithDir(dir string) {
-	r := regexp.MustCompile(".*\\.jpg")
+	r := regexp.MustCompile(`.*\.jpg`)
 
-	fs, err := ioutil.ReadDir(dir)
+	fs, err := os.ReadDir(dir)
 	if err != nil {
 		log.Info.Println(err)
 	}
 
 	for _, f := range fs {
-		if r.MatchString(f.Name()) == false {
+		if !r.MatchString(f.Name()) {
 			continue
 		}
-		path := filepath.Join(dir, f.Name())
-		b, err := ioutil.ReadFile(path)
+
+		info, err := f.Info()
 		if err != nil {
 			log.Info.Println(f, err)
-		} else {
-			s := snapshot{
-				ID:    f.Name(),
-				Date:  f.ModTime().Format(time.RFC3339),
-				Bytes: b,
-				Path:  path,
-			}
-			cc.add(&s)
 		}
+
+		path := filepath.Join(dir, f.Name())
+		b, err := os.ReadFile(path)
+		if err != nil {
+			log.Info.Println(f, err)
+			continue
+		}
+
+		s := snapshot{
+			ID:    f.Name(),
+			Date:  info.ModTime().Format(time.RFC3339),
+			Bytes: b,
+			Path:  path,
+		}
+		cc.add(&s)
+
 	}
 	cc.updateAssetsCharacteristic()
 
@@ -136,7 +143,7 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 				if err := jpeg.Encode(buf, *img, nil); err != nil {
 					log.Debug.Printf("jpeg.Encode() %v", err)
 				} else {
-					ioutil.WriteFile(path, buf.Bytes(), os.ModePerm)
+					os.WriteFile(path, buf.Bytes(), os.ModePerm)
 				}
 			}
 
@@ -207,7 +214,7 @@ func (cc *CameraControl) watch(dir string, r *regexp.Regexp) {
 			case event := <-w.Event:
 				switch event.Op {
 				case watcher.Create:
-					b, err := ioutil.ReadFile(event.Path)
+					b, err := os.ReadFile(event.Path)
 					if err != nil {
 						log.Info.Println(event.Path, err)
 					} else {

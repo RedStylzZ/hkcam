@@ -2,7 +2,7 @@ package ffmpeg
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"sync"
 
@@ -26,8 +26,8 @@ type FFMPEG interface {
 	RecentSnapshot(width, height uint) *Snapshot
 }
 
-var Stdout = ioutil.Discard
-var Stderr = ioutil.Discard
+var Stdout = io.Discard
+var Stderr = io.Discard
 
 // EnableVerboseLogging enables verbose logging of ffmpeg to stdout.
 func EnableVerboseLogging() {

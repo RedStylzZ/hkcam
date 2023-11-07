@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/brutella/hkcam/app"
+	"github.com/RedStylzZ/hkcam/app"
 	"github.com/go-chi/chi"
 
 	"net/http"
@@ -22,7 +22,7 @@ func (a *Api) Router() http.Handler {
 	r.Get("/system/heartbeat", a.SystemHeartbeat)
 	r.Get("/system/info", a.SystemInfo)
 	r.Post("/system/restart", a.SystemRestart)
-    r.Get("/snapshots/recent", a.RecentSnapshot)
+	r.Get("/snapshots/recent", a.RecentSnapshot)
 	r.Get("/snapshots/new", a.NewSnapshot)
 
 	return r

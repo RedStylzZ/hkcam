@@ -20,8 +20,8 @@ clean:
 	$(GOCLEAN)
 	rm -rf $(BUILD_DIR)
 
-run: build-fs
-	$(GOBUILD) -o $(BUILD_DIR)/hkcam -ldflags "-X main.Version=dev -X main.Date=$$(date +%FT%TZ%z)" cmd/hkcam/main.go cmd/hkcam/fs.go
+run:
+	$(GOBUILD) -o $(BUILD_DIR)/hkcam -ldflags "-X main.Version=dev -X main.Date=$$(date +%FT%TZ%z)" cmd/hkcam/main.go
 	$(BUILD_DIR)/hkcam --verbose --data_dir=cmd/hkcam/db
 
 package: build

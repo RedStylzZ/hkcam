@@ -1,9 +1,9 @@
 package html
 
 import (
+	"github.com/RedStylzZ/hkcam/api"
+	"github.com/RedStylzZ/hkcam/app"
 	"github.com/brutella/hap"
-	"github.com/brutella/hkcam/api"
-	"github.com/brutella/hkcam/app"
 	"github.com/go-chi/chi"
 	"github.com/unrolled/render"
 
@@ -14,13 +14,13 @@ import (
 )
 
 type Html struct {
-	Store      hap.Store
-	BuildMode  string
-	Api        *api.Api
-	App        *app.App
-	FileSystem render.FileSystem
-	Render     *render.Render
-	u          *app.Update
+	Store     hap.Store
+	BuildMode string
+	Api       *api.Api
+	App       *app.App
+	// FileSystem render.FileSystem
+	Render *render.Render
+	u      *app.Update
 }
 
 func (h *Html) HTML(w http.ResponseWriter, r *http.Request, status int, tmpl string, layout string, binding interface{}) {
