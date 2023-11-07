@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/brutella/hap/log"
 	"github.com/brutella/hap/rtp"
+	log "github.com/sirupsen/logrus"
 )
 
 // StreamID is the type of the stream identifier
@@ -82,7 +82,7 @@ func (f *ffmpeg) Start(id StreamID, video rtp.VideoParameters, audio rtp.AudioPa
 
 	s, err := f.getStream(id)
 	if err != nil {
-		log.Info.Println("start:", err)
+		log.Infof("start:", err)
 		return err
 	}
 
@@ -97,7 +97,7 @@ func (f *ffmpeg) Stop(id StreamID) {
 
 	s, err := f.getStream(id)
 	if err != nil {
-		log.Info.Println("stop:", err)
+		log.Infof("stop:", err)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (f *ffmpeg) Stop(id StreamID) {
 	if f.loop != nil {
 		for _, s := range f.streams {
 			if s.isActive() {
-				log.Debug.Printf("Active sessions %v\n", f.streams)
+				log.Debugf("Active sessions %v\n", f.streams)
 				return
 			}
 		}
@@ -122,7 +122,7 @@ func (f *ffmpeg) Suspend(id StreamID) {
 	defer f.mutex.Unlock()
 
 	if s, err := f.getStream(id); err != nil {
-		log.Info.Println("suspend:", err)
+		log.Infof("suspend:", err)
 	} else {
 		s.suspend()
 	}
@@ -133,7 +133,7 @@ func (f *ffmpeg) Resume(id StreamID) {
 	defer f.mutex.Unlock()
 
 	if s, err := f.getStream(id); err != nil {
-		log.Info.Println("resume:", err)
+		log.Infof("resume:", err)
 	} else {
 		s.resume()
 	}
@@ -145,7 +145,7 @@ func (f *ffmpeg) Reconfigure(id StreamID, video rtp.VideoParameters, audio rtp.A
 
 	s, err := f.getStream(id)
 	if err != nil {
-		log.Info.Println("reconfigure:", err)
+		log.Infof("reconfigure:", err)
 		return err
 	}
 
@@ -163,7 +163,7 @@ func (f *ffmpeg) getStream(id StreamID) (*stream, error) {
 func (f *ffmpeg) startLoopback() {
 	if f.loop != nil {
 		if err := f.loop.Start(); err != nil {
-			log.Info.Println("starting loopback failed:", err)
+			log.Infof("starting loopback failed:", err)
 		}
 	}
 }
@@ -187,7 +187,7 @@ func (f *ffmpeg) Snapshot(width, height uint) (*Snapshot, error) {
 	if f.loop != nil {
 		for _, s := range f.streams {
 			if s.isActive() {
-				log.Debug.Printf("Active sessions %v\n", f.streams)
+				log.Debugf("Active sessions %v\n", f.streams)
 				return shot, err
 			}
 		}

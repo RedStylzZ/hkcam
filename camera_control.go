@@ -1,9 +1,9 @@
 package hkcam
 
 import (
-	"github.com/brutella/hap/log"
 	"github.com/nfnt/resize"
 	"github.com/radovskyb/watcher"
+	log "github.com/sirupsen/logrus"
 
 	"bytes"
 	"encoding/json"
@@ -50,7 +50,7 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 
 	fs, err := os.ReadDir(dir)
 	if err != nil {
-		log.Info.Println(err)
+		log.Infoln(err)
 	}
 
 	for _, f := range fs {
@@ -60,13 +60,13 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 
 		info, err := f.Info()
 		if err != nil {
-			log.Info.Println(f, err)
+			log.Infoln(f, err)
 		}
 
 		path := filepath.Join(dir, f.Name())
 		b, err := os.ReadFile(path)
 		if err != nil {
-			log.Info.Println(f, err)
+			log.Infoln(f, err)
 			continue
 		}
 
@@ -87,7 +87,7 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 		var req GetAssetRequest
 		err := json.Unmarshal(buf, &req)
 		if err != nil {
-			log.Debug.Fatalln("GetAssetRequest:", err)
+			log.Fatalf("GetAssetRequest:", err)
 		}
 
 		for _, s := range cc.snapshots {
@@ -95,7 +95,7 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 				r := bytes.NewReader(s.Bytes)
 				img, err := jpeg.Decode(r)
 				if err != nil {
-					log.Info.Printf("jpeg.Decode() %v", err)
+					log.Infof("jpeg.Decode() %v", err)
 					cc.GetAsset.SetValue([]byte{})
 					return
 				}
@@ -103,7 +103,7 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 				scaled := resize.Resize(req.Width, req.Height, img, resize.Lanczos3)
 				imgBuf := new(bytes.Buffer)
 				if err := jpeg.Encode(imgBuf, scaled, nil); err != nil {
-					log.Info.Printf("jpeg.Encode() %v", err)
+					log.Infof("jpeg.Encode() %v", err)
 					cc.GetAsset.SetValue([]byte{})
 					return
 				}
@@ -118,30 +118,30 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 		var req DeleteAssetsRequest
 		err := json.Unmarshal(buf, &req)
 		if err != nil {
-			log.Debug.Fatalln("GetAssetRequest:", err)
+			log.Fatalf("GetAssetRequest: %s", err)
 			return
 		}
 
 		for _, id := range req.IDs {
 			err = cc.deleteWithID(id)
 			if err != nil {
-				log.Debug.Println("delete:", err)
+				log.Debugln("delete:", err)
 			}
 		}
 	})
 
 	cc.TakeSnapshot.OnValueRemoteUpdate(func(v bool) {
-		if v == true {
+		if v {
 			img, err := cc.CameraSnapshotReq(1920, 1080)
 			if err != nil {
-				log.Info.Println(err)
+				log.Infoln(err)
 			} else {
-				name := fmt.Sprintf("%.0f.jpg", time.Now().Sub(RefDate).Seconds())
+				name := fmt.Sprintf("%.0f.jpg", time.Since(RefDate).Seconds())
 				path := filepath.Join(dir, name)
 
 				buf := new(bytes.Buffer)
 				if err := jpeg.Encode(buf, *img, nil); err != nil {
-					log.Debug.Printf("jpeg.Encode() %v", err)
+					log.Debugf("jpeg.Encode() %v", err)
 				} else {
 					os.WriteFile(path, buf.Bytes(), os.ModePerm)
 				}
@@ -157,23 +157,23 @@ func (cc *CameraControl) SetupWithDir(dir string) {
 }
 
 func (cc *CameraControl) add(s *snapshot) {
-	log.Debug.Println("add:", s.ID)
+	log.Debugln("add:", s.ID)
 	cc.snapshots = append(cc.snapshots, s)
 }
 
 func (cc *CameraControl) deleteWithID(id string) error {
-	log.Debug.Println("del:", id)
+	log.Debugln("del:", id)
 	for _, s := range cc.snapshots {
 		if s.ID == id {
 			return os.Remove(s.Path)
 		}
 	}
 
-	return fmt.Errorf("File with id %s not found", id)
+	return fmt.Errorf("file with id %s not found", id)
 }
 
 func (cc *CameraControl) removeWithID(id string) {
-	log.Debug.Println("rmv:", id)
+	log.Debugln("rmv:", id)
 	for i, s := range cc.snapshots {
 		if s.ID == id {
 			cc.snapshots = append(cc.snapshots[:i], cc.snapshots[i+1:]...)
@@ -196,9 +196,9 @@ func (cc *CameraControl) updateAssetsCharacteristic() {
 		Assets: assets,
 	}
 	if b, err := json.Marshal(p); err != nil {
-		log.Info.Println(err)
+		log.Infoln(err)
 	} else {
-		log.Debug.Println(string(b))
+		log.Debugln(string(b))
 		cc.Assets.SetValue(b)
 	}
 }
@@ -216,7 +216,7 @@ func (cc *CameraControl) watch(dir string, r *regexp.Regexp) {
 				case watcher.Create:
 					b, err := os.ReadFile(event.Path)
 					if err != nil {
-						log.Info.Println(event.Path, err)
+						log.Infoln(event.Path, err)
 					} else {
 						s := snapshot{
 							ID:    event.Name(),
@@ -235,7 +235,7 @@ func (cc *CameraControl) watch(dir string, r *regexp.Regexp) {
 				cc.updateAssetsCharacteristic()
 
 			case err := <-w.Error:
-				log.Info.Fatalln(err)
+				log.Fatal(err)
 			case <-w.Closed:
 				return
 			}
@@ -243,11 +243,11 @@ func (cc *CameraControl) watch(dir string, r *regexp.Regexp) {
 	}()
 
 	if err := w.Add(dir); err != nil {
-		log.Info.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	if err := w.Start(time.Second * 1); err != nil {
-		log.Info.Fatalln(err)
+		log.Fatal(err)
 	}
 }
 

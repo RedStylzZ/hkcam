@@ -5,7 +5,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/brutella/go-github-selfupdate/selfupdate"
 	"github.com/brutella/hap"
-	"github.com/brutella/hap/log"
+	log "github.com/sirupsen/logrus"
 
 	"fmt"
 	"os"
@@ -22,7 +22,7 @@ type App struct {
 }
 
 func (app App) Restart() {
-	log.Info.Println("restart not implemented yet")
+	log.Info("restart not implemented yet")
 }
 
 // SemVersion returns the semantic version of the app.
@@ -44,18 +44,18 @@ func (app App) CheckForUpdate(pre bool) (up *Update, err error) {
 	}
 
 	if up == nil {
-		log.Debug.Println("check for update: no new version found")
+		log.Debugln("check for update: no new version found")
 		return
 	}
 
 	rv, err = semver.ParseTolerant(up.Version)
 	if err != nil {
-		log.Debug.Println("check for update:", err)
+		log.Debugln("check for update:", err)
 		return
 	}
 
 	if rv.LTE(av) {
-		log.Debug.Printf("check for update: %s <= %s\n", rv, av)
+		log.Debugf("check for update: %s <= %s\n", rv, av)
 		up = nil
 		return
 	}
@@ -70,7 +70,7 @@ func (app App) LatestVersion(pre bool) (*Update, error) {
 	}
 
 	if !found {
-		log.Debug.Println("check for update: no version found")
+		log.Debugln("check for update: no version found")
 		return nil, nil
 	}
 
@@ -91,7 +91,7 @@ func (app *App) InstallUpdate(up *Update) error {
 
 	cmdPath, err := os.Executable()
 	if err != nil {
-		log.Info.Println(err)
+		log.Info(err)
 		up.State = UpdateStateFailure
 		up.Err = err
 		return err
@@ -99,7 +99,7 @@ func (app *App) InstallUpdate(up *Update) error {
 
 	upt, err := selfupdate.NewUpdater(selfupdate.Config{PreRelease: up.PreRelease})
 	if err != nil {
-		log.Info.Println(err)
+		log.Info(err)
 		up.State = UpdateStateFailure
 		up.Err = err
 		return err
@@ -107,7 +107,7 @@ func (app *App) InstallUpdate(up *Update) error {
 
 	re, found, err := upt.DetectVersion("brutella/hkcam", up.Version)
 	if err != nil {
-		log.Info.Println("search version:", err)
+		log.Info("search version:", err)
 
 		// update failed
 		up.State = UpdateStateFailure
@@ -115,7 +115,7 @@ func (app *App) InstallUpdate(up *Update) error {
 		return err
 	} else if !found {
 		err := fmt.Errorf("version %s not found", up.Version)
-		log.Info.Println(err)
+		log.Info(err)
 
 		// update failed
 		up.State = UpdateStateFailure
@@ -125,7 +125,7 @@ func (app *App) InstallUpdate(up *Update) error {
 
 	err = upt.UpdateTo(re, cmdPath)
 	if err != nil {
-		log.Info.Println("install update:", err)
+		log.Info("install update:", err)
 
 		// update failed
 		up.State = UpdateStateFailure

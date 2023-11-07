@@ -87,7 +87,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Infof("version %s (built at %s)\n", Version, Date)
+	log.Infof("version %s (built at %s)", Version, Date)
 
 	switchInfo := accessory.Info{Name: "Camera", Firmware: Version, Manufacturer: "Matthias Hochgatterer"}
 	cam := accessory.NewCamera(switchInfo)

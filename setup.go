@@ -4,10 +4,10 @@ import (
 	"github.com/RedStylzZ/hkcam/ffmpeg"
 	"github.com/brutella/hap/accessory"
 	"github.com/brutella/hap/characteristic"
-	"github.com/brutella/hap/log"
 	"github.com/brutella/hap/rtp"
 	"github.com/brutella/hap/service"
 	"github.com/brutella/hap/tlv8"
+	log "github.com/sirupsen/logrus"
 
 	"fmt"
 	"math/rand"
@@ -39,7 +39,7 @@ func first(ips []net.IP, filter func(net.IP) bool) net.IP {
 }
 
 func setupStreamManagement(m *service.CameraRTPStreamManagement, ff ffmpeg.FFMPEG, multiStream bool) {
-	setTLV8Payload(m.StreamingStatus.Bytes, rtp.StreamingStatus{rtp.StreamingStatusAvailable})
+	setTLV8Payload(m.StreamingStatus.Bytes, rtp.StreamingStatus{Status: rtp.StreamingStatusAvailable})
 	setTLV8Payload(m.SupportedRTPConfiguration.Bytes, rtp.NewConfiguration(rtp.CryptoSuite_AES_CM_128_HMAC_SHA1_80))
 	setTLV8Payload(m.SupportedVideoStreamConfiguration.Bytes, rtp.DefaultVideoStreamConfiguration())
 	setTLV8Payload(m.SupportedAudioStreamConfiguration.Bytes, rtp.DefaultAudioStreamConfiguration())
@@ -48,7 +48,7 @@ func setupStreamManagement(m *service.CameraRTPStreamManagement, ff ffmpeg.FFMPE
 		var cfg rtp.StreamConfiguration
 		err := tlv8.Unmarshal(buf, &cfg)
 		if err != nil {
-			log.Debug.Fatalf("SelectedRTPStreamConfiguration: Could not unmarshal tlv8 data: %s\n", err)
+			log.Fatalf("SelectedRTPStreamConfiguration: Could not unmarshal tlv8 data: %s\n", err)
 		}
 
 		id := ffmpeg.StreamID(cfg.Command.Identifier)
@@ -59,7 +59,7 @@ func setupStreamManagement(m *service.CameraRTPStreamManagement, ff ffmpeg.FFMPE
 				// If only one video stream is supported, set the status to busy.
 				// This way HomeKit knows that nobody is allowed to connect anymore.
 				// If multiple streams are supported, the status is always available.
-				setTLV8Payload(m.StreamingStatus.Bytes, rtp.StreamingStatus{rtp.StreamingStatusBusy})
+				setTLV8Payload(m.StreamingStatus.Bytes, rtp.StreamingStatus{Status: rtp.StreamingStatusBusy})
 			}
 		case rtp.SessionControlCommandTypeSuspend:
 			ff.Suspend(id)
@@ -69,9 +69,9 @@ func setupStreamManagement(m *service.CameraRTPStreamManagement, ff ffmpeg.FFMPE
 			ff.Reconfigure(id, cfg.Video, cfg.Audio)
 		case rtp.SessionControlCommandTypeEnd:
 			ff.Stop(id)
-			setTLV8Payload(m.StreamingStatus.Bytes, rtp.StreamingStatus{rtp.StreamingStatusAvailable})
+			setTLV8Payload(m.StreamingStatus.Bytes, rtp.StreamingStatus{Status: rtp.StreamingStatusAvailable})
 		default:
-			log.Debug.Printf("Unknown command type %d", cfg.Command.Type)
+			log.Debugf("Unknown command type %d", cfg.Command.Type)
 		}
 	})
 
@@ -83,17 +83,17 @@ func setupStreamManagement(m *service.CameraRTPStreamManagement, ff ffmpeg.FFMPE
 		var req rtp.SetupEndpoints
 		err := tlv8.Unmarshal(new, &req)
 		if err != nil {
-			log.Debug.Fatalf("SetupEndpoints: Could not unmarshal tlv8 data: %s\n", err)
+			log.Fatalf("SetupEndpoints: Could not unmarshal tlv8 data: %s\n", err)
 		}
 
 		iface, err := ifaceOfRequest(r)
 		if err != nil {
-			log.Debug.Println(err)
+			log.Debugln(err)
 			return
 		}
 		ip, err := ipAtInterface(*iface, req.ControllerAddr.IPVersion)
 		if err != nil {
-			log.Debug.Println(err)
+			log.Debugln(err)
 			return
 		}
 
@@ -128,14 +128,14 @@ func setupStreamManagement(m *service.CameraRTPStreamManagement, ff ffmpeg.FFMPE
 func ipAtInterface(iface net.Interface, version uint8) (net.IP, error) {
 	addrs, err := iface.Addrs()
 	if err != nil {
-		log.Debug.Println(err)
+		log.Debugln(err)
 		return nil, err
 	}
 
 	for _, addr := range addrs {
 		ip, _, err := net.ParseCIDR(addr.String())
 		if err != nil {
-			log.Debug.Println(err)
+			log.Debugln(err)
 			continue
 		}
 
@@ -177,7 +177,7 @@ func ifaceOfRequest(r *http.Request) (*net.Interface, error) {
 		comps := strings.Split(host, "%")
 		if len(comps) == 2 {
 			name := comps[1]
-			log.Debug.Printf("querying interface with name %s\n", name)
+			log.Debugf("querying interface with name %s", name)
 			return net.InterfaceByName(name)
 		}
 
@@ -214,6 +214,6 @@ func setTLV8Payload(c *characteristic.Bytes, v interface{}) {
 	if tlv8, err := tlv8.Marshal(v); err == nil {
 		c.SetValue(tlv8)
 	} else {
-		log.Debug.Fatal(err)
+		log.Fatal(err)
 	}
 }

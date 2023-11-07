@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/brutella/hap/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // loopback copies data from the inpute filename to the loopback filename.
@@ -46,7 +46,7 @@ func (l *loopback) Start() error {
 	defer l.mutex.Unlock()
 
 	if l.cmd == nil {
-		log.Debug.Println("Starting loopback")
+		log.Debug("Starting loopback")
 		cmd := l.execCmd()
 		pr, pw := io.Pipe()
 		// cmd.Stdout = pw
@@ -56,22 +56,22 @@ func (l *loopback) Start() error {
 			return err
 		}
 
-		done := make(chan struct{}, 0)
+		done := make(chan struct{}, 1)
 		go func() {
 			r := bufio.NewReader(pr)
 			for {
 				line, _, err := r.ReadLine()
 				if err != nil {
 					if err == io.EOF {
-						log.Info.Println("ffmpeg: process stopped")
+						log.Infoln("ffmpeg: process stopped")
 					} else {
-						log.Info.Println("ffmpeg:", err)
+						log.Infoln("ffmpeg:", err)
 					}
 					return
 				}
-				log.Debug.Println(string(line))
+				log.Debug(string(line))
 				if strings.Contains(string(line), "Press [q] to stop, [?] for help") {
-					log.Debug.Println("ffmpeg is now running")
+					log.Debug("ffmpeg is now running")
 					done <- struct{}{}
 				}
 			}
@@ -79,12 +79,12 @@ func (l *loopback) Start() error {
 
 		select {
 		case <-done:
-			log.Debug.Println("Loopback started")
+			log.Debug("Loopback started")
 			l.cmd = cmd
 			return nil
 		case <-time.After(20 * time.Second):
-			err := errors.New("Loopback failed to start")
-			log.Debug.Println(err)
+			err := errors.New("loopback failed to start")
+			log.Debug(err)
 			cmd.Process.Signal(syscall.SIGINT)
 			cmd.Wait()
 			return err
@@ -100,7 +100,7 @@ func (l *loopback) Stop() {
 	defer l.mutex.Unlock()
 
 	if l.cmd != nil {
-		log.Debug.Println("Stopping loopback")
+		log.Debug("Stopping loopback")
 		l.cmd.Process.Signal(syscall.SIGINT)
 		l.cmd.Wait()
 		l.cmd = nil
@@ -111,7 +111,7 @@ func (l *loopback) Stop() {
 func (l *loopback) execCmd() *exec.Cmd {
 	cmd := exec.Command("ffmpeg", "-f", l.inputDevice, "-i", l.inputFilename, "-codec:v", "copy", "-f", l.inputDevice, l.loopbackFilename)
 
-	log.Debug.Println(cmd)
+	log.Debug(cmd)
 
 	return cmd
 }

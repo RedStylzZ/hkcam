@@ -2,11 +2,12 @@ package ffmpeg
 
 import (
 	"fmt"
-	"github.com/brutella/hap/log"
-	"github.com/brutella/hap/rtp"
 	"os/exec"
 	"strings"
 	"syscall"
+
+	"github.com/brutella/hap/rtp"
+	log "github.com/sirupsen/logrus"
 )
 
 type stream struct {
@@ -27,7 +28,7 @@ func (s *stream) isActive() bool {
 }
 
 func (s *stream) stop() {
-	log.Debug.Println("stop stream")
+	log.Debugln("stop stream")
 
 	if s.cmd != nil {
 		s.cmd.Process.Signal(syscall.SIGINT)
@@ -37,7 +38,7 @@ func (s *stream) stop() {
 }
 
 func (s *stream) start(video rtp.VideoParameters, audio rtp.AudioParameters) error {
-	log.Debug.Println("start stream")
+	log.Debug("start stream")
 
 	// -vsync 2: Fixes "Frame rate very high for a muxer not efficiently supporting it."
 	// -framerate before -i specifies the framerate for the input, after -i sets it for the output https://stackoverflow.com/questions/38498599/webcam-with-ffmpeg-on-mac-selected-framerate-29-970030-is-not-supported-by-th#38549528
@@ -88,7 +89,7 @@ func (s *stream) start(video rtp.VideoParameters, audio rtp.AudioParameters) err
 	cmd.Stdout = Stdout
 	cmd.Stderr = Stderr
 
-	log.Debug.Println(cmd)
+	log.Debugln(cmd)
 
 	err := cmd.Start()
 	if err == nil {
@@ -100,20 +101,20 @@ func (s *stream) start(video rtp.VideoParameters, audio rtp.AudioParameters) err
 
 // TODO (mah) test
 func (s *stream) suspend() {
-	log.Debug.Println("suspend stream")
+	log.Debugln("suspend stream")
 	s.cmd.Process.Signal(syscall.SIGSTOP)
 }
 
 // TODO (mah) test
 func (s *stream) resume() {
-	log.Debug.Println("resume stream")
+	log.Debugln("resume stream")
 	s.cmd.Process.Signal(syscall.SIGCONT)
 }
 
 // TODO (mah) implement
 func (s *stream) reconfigure(video rtp.VideoParameters, audio rtp.AudioParameters) error {
 	if s.cmd != nil {
-		log.Debug.Printf("reconfigure() is not implemented %+v %+v\n", video, audio)
+		log.Debugf("reconfigure() is not implemented %+v %+v\n", video, audio)
 	}
 
 	return nil
@@ -209,9 +210,9 @@ func videoMTU(setup rtp.SetupEndpoints) string {
 func audioCodecOption(param rtp.AudioParameters) string {
 	switch param.CodecType {
 	case rtp.AudioCodecType_PCMU:
-		log.Debug.Println("audioCodec(PCMU) not supported")
+		log.Debugln("audioCodec(PCMU) not supported")
 	case rtp.AudioCodecType_PCMA:
-		log.Debug.Println("audioCodec(PCMA) not supported")
+		log.Debugln("audioCodec(PCMA) not supported")
 	case rtp.AudioCodecType_AAC_ELD:
 		return "-acodec aac"
 		// return "-acodec libfdk_aac -aprofile aac_eld" // requires ffmpeg built with --enable-libfdk-aac
@@ -220,11 +221,11 @@ func audioCodecOption(param rtp.AudioParameters) string {
 		// - macOS: brew reinstall ffmpeg --with-opus
 		return fmt.Sprintf("-acodec libopus")
 	case rtp.AudioCodecType_MSBC:
-		log.Debug.Println("audioCodec(MSBC) not supported")
+		log.Debugln("audioCodec(MSBC) not supported")
 	case rtp.AudioCodecType_AMR:
-		log.Debug.Println("audioCodec(AMR) not supported")
+		log.Debugln("audioCodec(AMR) not supported")
 	case rtp.AudioCodecType_ARM_WB:
-		log.Debug.Println("audioCodec(ARM_WB) not supported")
+		log.Debugln("audioCodec(ARM_WB) not supported")
 	}
 
 	return ""
@@ -237,7 +238,7 @@ func audioVariableBitrate(param rtp.AudioParameters) string {
 	case rtp.AudioCodecBitrateConstant:
 		return "off"
 	default:
-		log.Info.Println("variableBitrate() undefined bitrate", param.CodecParams.Bitrate)
+		log.Infoln("variableBitrate() undefined bitrate", param.CodecParams.Bitrate)
 		break
 	}
 
@@ -253,7 +254,7 @@ func audioSamplingRate(param rtp.AudioParameters) string {
 	case rtp.AudioCodecSampleRate24Khz:
 		return "24k"
 	default:
-		log.Info.Println("audioSamplingRate() undefined samplerate", param.CodecParams.Samplerate)
+		log.Infoln("audioSamplingRate() undefined samplerate", param.CodecParams.Samplerate)
 		break
 	}
 
